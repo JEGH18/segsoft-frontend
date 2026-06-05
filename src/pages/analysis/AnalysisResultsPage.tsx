@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getAnalysisFindings, getAnalysisResults } from '@/api/analyses';
 import { getFindingDetail } from '@/api/findings';
+import { useAuth } from '@/store/authStore';
 import type {
   AnalysisResultsResponse,
   FindingDetailResponse,
@@ -21,6 +22,7 @@ const DEFAULT_FILTERS: FindingsFilters = {
 
 export default function AnalysisResultsPage() {
   const { id } = useParams<{ id: string }>();
+  const { setLastAnalysisId } = useAuth();
   const [results, setResults] = useState<AnalysisResultsResponse | null>(null);
   const [findings, setFindings] = useState<FindingListItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,6 +35,10 @@ export default function AnalysisResultsPage() {
   const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null);
   const [detail, setDetail] = useState<FindingDetailResponse | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+
+  useEffect(() => {
+    if (id) setLastAnalysisId(id);
+  }, [id, setLastAnalysisId]);
 
   useEffect(() => {
     if (!id) return;

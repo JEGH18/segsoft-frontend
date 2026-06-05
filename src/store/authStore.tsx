@@ -9,21 +9,25 @@ interface AuthState {
   user: UserResponse | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  lastAnalysisId: string | null;
 }
 
 type AuthAction =
   | { type: 'LOGIN'; payload: { user: UserResponse; token: string } }
   | { type: 'LOGOUT' }
-  | { type: 'SET_LOADING'; payload: boolean };
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_LAST_ANALYSIS'; payload: string };
 
 function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
     case 'LOGIN':
       return { ...state, user: action.payload.user, isAuthenticated: true, isLoading: false };
     case 'LOGOUT':
-      return { user: null, isAuthenticated: false, isLoading: false };
+      return { user: null, isAuthenticated: false, isLoading: false, lastAnalysisId: null };
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
+    case 'SET_LAST_ANALYSIS':
+      return { ...state, lastAnalysisId: action.payload };
     default:
       return state;
   }
@@ -33,6 +37,7 @@ interface AuthContextValue extends AuthState {
   login: (user: UserResponse, token: string) => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
+  setLastAnalysisId: (id: string) => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -40,11 +45,11 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 // Module-level flag prevents double bootstrap in React StrictMode (double useEffect)
 let bootstrapRan = false;
 
-// Start loading=true so ProtectedRoute waits before redirecting to /login
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
   isLoading: true,
+  lastAnalysisId: null,
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -62,6 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setLoading = useCallback((loading: boolean) => {
     dispatch({ type: 'SET_LOADING', payload: loading });
+  }, []);
+
+  const setLastAnalysisId = useCallback((id: string) => {
+    dispatch({ type: 'SET_LAST_ANALYSIS', payload: id });
   }, []);
 
   // On mount: try to restore session using the httpOnly refresh cookie.
@@ -84,8 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ ...state, login, logout, setLoading }),
-    [state, login, logout, setLoading],
+    () => ({ ...state, login, logout, setLoading, setLastAnalysisId }),
+    [state, login, logout, setLoading, setLastAnalysisId],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
