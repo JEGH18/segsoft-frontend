@@ -13,6 +13,19 @@ vi.mock('@/api/findings', () => ({
   getFindingDetail: vi.fn(),
 }));
 
+// The results page renders the role-gated export button, which reads the
+// logged-in user; a DEVELOPER keeps it hidden so this test is unaffected.
+vi.mock('@/store/authStore', () => ({
+  useAuth: () => ({
+    user: { id: 'u1', username: 'dev', roles: ['DEVELOPER'] },
+    isAuthenticated: true,
+    isLoading: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+    setLoading: vi.fn(),
+  }),
+}));
+
 import * as analysesApi from '@/api/analyses';
 import * as findingsApi from '@/api/findings';
 
