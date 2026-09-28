@@ -388,7 +388,8 @@ export default function DashboardPage() {
         <p className="text-xs text-neutral-400 mb-4 -mt-2">
           Elige un framework para preseleccionar sus políticas al continuar.
         </p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {/* Desde sm todos los frameworks comparten una sola fila; en móvil van de a 2 y la sobrante queda centrada. */}
+        <div className="flex flex-wrap justify-center gap-3 sm:flex-nowrap">
           {availableFrameworks.map((framework) => {
             const isSelected = selectedFramework === framework;
             return (
@@ -397,11 +398,11 @@ export default function DashboardPage() {
                 type="button"
                 onClick={() => pickFramework(isSelected ? null : framework)}
                 aria-pressed={isSelected}
-                className={`card p-4 text-left transition-all ${
+                className={`card p-4 text-left transition-all w-[calc(50%-0.375rem)] sm:w-auto sm:flex-1 sm:min-w-0 ${
                   isSelected ? 'border-neutral-900 ring-1 ring-neutral-900' : 'hover:border-neutral-400'
                 }`}
               >
-                <div className="flex items-center justify-between gap-2 mb-1">
+                <div className="flex items-start justify-between gap-2 mb-1">
                   <p className="text-sm font-semibold text-neutral-900">{FRAMEWORK_LABELS[framework]}</p>
                   <span className={`badge text-xs shrink-0 ${isSelected ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-500'}`}>
                     {frameworkCounts.get(framework) ?? 0}
