@@ -14,6 +14,7 @@ import FindingsFiltersComponent from '@/components/results/FindingsFilters';
 import FindingsTable from '@/components/results/FindingsTable';
 import FindingDetailPanel from '@/components/results/FindingDetailPanel';
 import ResultsDashboard from '@/components/results/ResultsDashboard';
+import ExportReportButton from '@/components/reports/ExportReportButton';
 
 const DEFAULT_FILTERS: FindingsFilters = {
   severities: [],
@@ -130,9 +131,14 @@ export default function AnalysisResultsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="page-header">
-        <h1 className="page-title">Resultados del análisis</h1>
-        <p className="page-subtitle font-mono text-xs">{id}</p>
+      <div className="page-header flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="page-title">Resultados del análisis</h1>
+          <p className="page-subtitle font-mono text-xs">{id}</p>
+        </div>
+        {results && !forbidden && (
+          <ExportReportButton analysisId={id} analysisStatus={results.analysis.status} />
+        )}
       </div>
 
       {forbidden ? (
