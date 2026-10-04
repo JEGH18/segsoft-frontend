@@ -10,23 +10,10 @@ import PolicySetListPage from '@/components/policySets/PolicySetListPage';
 import PolicySetDetailPage from '@/components/policySets/PolicySetDetailPage';
 import FileInventory from '@/components/repositories/FileInventory';
 import PolicySelectionView from '@/components/repositories/PolicySelectionView';
+import ReportListPage from '@/pages/reports/ReportListPage';
+import ReportDetailPage from '@/pages/reports/ReportDetailPage';
 import AnalysisResultsPage from '@/pages/analysis/AnalysisResultsPage';
 import AnalysesLandingPage from '@/pages/analysis/AnalysesLandingPage';
-
-function ComingSoon({ label }: { label: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
-      <div className="w-12 h-12 bg-neutral-100 rounded-xl flex items-center justify-center text-neutral-400 mb-4">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-      </div>
-      <p className="text-sm font-semibold text-neutral-700">{label}</p>
-      <p className="text-xs text-neutral-400 mt-1">Próximamente disponible</p>
-    </div>
-  );
-}
 
 function RepositoryFilesPage() {
   const { repoId } = useParams<{ repoId: string }>();
@@ -62,7 +49,8 @@ export default function AppRouter() {
           <Route path="/repositories/:repoId/policy-selection" element={<PolicySelectionPage />} />
           <Route path="/analyses" element={<AnalysesLandingPage />} />
           <Route path="/analyses/:id/results" element={<AnalysisResultsPage />} />
-          <Route path="/reports" element={<ComingSoon label="History" />} />
+          <Route path="/reports" element={<ReportListPage />} />
+          <Route path="/reports/:id" element={<ReportDetailPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

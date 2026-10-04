@@ -26,7 +26,7 @@ const navItems = [
   { to: '/analyses', label: 'Análisis', end: false },
   { to: '/policies', label: 'Policies', end: false },
   { to: '/policy-sets', label: 'Policy Sets', end: false },
-  { to: '/reports', label: 'History', end: false },
+  { to: '/reports', label: 'Reportes', end: false },
 ];
 
 export default function AppLayout() {
