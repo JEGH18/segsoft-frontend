@@ -3,6 +3,7 @@ import { AxiosError } from 'axios';
 import { usePolicies } from '@/hooks/usePolicySelection';
 import { useCreatePolicySet } from '@/hooks/usePolicySets';
 import { Category, Framework } from '@/types/enums';
+import SelectAllCheckbox from '@/components/common/SelectAllCheckbox';
 
 const CATEGORY_LABELS: Record<string, string> = {
   SQL_INJECTION: 'SQL Injection',
@@ -132,6 +133,14 @@ export default function PolicySetCreateForm({ onSuccess }: PolicySetCreateFormPr
           <p className="text-sm text-neutral-500">Cargando políticas...</p>
         ) : (
           <div className="card overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-neutral-200 bg-white">
+              <SelectAllCheckbox
+                visibleIds={filteredPolicies.map((policy) => policy.id)}
+                selectedIds={selectedIds}
+                onChange={setSelectedIds}
+                filtered={search.trim() !== ''}
+              />
+            </div>
             <div className="overflow-x-auto max-h-72 overflow-y-auto">
               <table className="w-full text-sm">
                 <caption className="sr-only">Políticas activas disponibles</caption>
