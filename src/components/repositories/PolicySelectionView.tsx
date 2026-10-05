@@ -489,7 +489,7 @@ export default function PolicySelectionView({ repositoryId }: PolicySelectionVie
         {/* Left: filters + table */}
         <div className="lg:col-span-2 space-y-4">
           <div className="card p-4">
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <input
                 id="policy-name-filter"
                 type="text"
@@ -497,14 +497,14 @@ export default function PolicySelectionView({ repositoryId }: PolicySelectionVie
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Buscar política..."
                 aria-label="Filtrar por nombre"
-                className="form-input max-w-xs"
+                className="form-input sm:flex-1 sm:min-w-[10rem]"
               />
               <select
                 id="policy-category-filter"
                 value={categoryFilter}
                 onChange={(event) => setCategoryFilter(event.target.value as 'ALL' | Category)}
                 aria-label="Filtrar por categoría"
-                className="form-select w-auto"
+                className="form-select sm:w-auto min-w-0"
               >
                 <option value="ALL">Todas las categorías</option>
                 {ALL_CATEGORIES.map((category) => (
@@ -516,7 +516,7 @@ export default function PolicySelectionView({ repositoryId }: PolicySelectionVie
                 value={frameworkFilter}
                 onChange={(event) => setFrameworkFilter(event.target.value as 'ALL' | Framework)}
                 aria-label="Filtrar por framework"
-                className="form-select w-auto"
+                className="form-select sm:w-auto sm:shrink-0"
               >
                 <option value="ALL">Todos los frameworks</option>
                 {Object.values(Framework).map((framework) => (
