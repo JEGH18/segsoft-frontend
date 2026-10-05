@@ -14,7 +14,7 @@ import FindingsFiltersComponent from '@/components/results/FindingsFilters';
 import FindingsTable from '@/components/results/FindingsTable';
 import FindingDetailPanel from '@/components/results/FindingDetailPanel';
 import ResultsDashboard from '@/components/results/ResultsDashboard';
-import ExportReportButton from '@/components/reports/ExportReportButton';
+import GenerateReportButton from '@/components/reports/GenerateReportButton';
 
 const DEFAULT_FILTERS: FindingsFilters = {
   severities: [],
@@ -137,7 +137,7 @@ export default function AnalysisResultsPage() {
           <p className="page-subtitle font-mono text-xs">{id}</p>
         </div>
         {results && !forbidden && (
-          <ExportReportButton analysisId={id} analysisStatus={results.analysis.status} />
+          <GenerateReportButton analysisId={id} analysisStatus={results.analysis.status} />
         )}
       </div>
 
