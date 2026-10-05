@@ -1,6 +1,6 @@
 import { useReportDownload } from '@/hooks/useReportDownload';
 import { useAuth } from '@/store/authStore';
-import type { ReportExportFormat, ReportSummary } from '@/types/report';
+import type { DownloadableReport, ReportExportFormat } from '@/types/report';
 import Spinner from './Spinner';
 
 const EXPORT_ROLES = ['AUDITOR', 'SECURITY_ADMIN'];
@@ -15,7 +15,7 @@ const FORMATS: { format: ReportExportFormat; label: string; hint: string }[] = [
  * AUDITOR and SECURITY_ADMIN (the backend refuses everyone else) and only
  * for reports in GENERATED state.
  */
-export default function ReportDownloadButtons({ report }: { report: ReportSummary }) {
+export default function ReportDownloadButtons({ report }: { report: DownloadableReport }) {
   const { user } = useAuth();
   const { download, isDownloading, error, completed } = useReportDownload(report.id);
 

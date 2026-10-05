@@ -1,23 +1,27 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useReport } from '@/hooks/useReports';
 import ReportDownloadButtons from '@/components/reports/ReportDownloadButtons';
+import ReportPreview from '@/components/reports/ReportPreview';
 import Spinner from '@/components/reports/Spinner';
-import { SEVERITY_COLOR_CLASSES } from '@/utils/severityColors';
-import { Severity } from '@/types/enums';
-import { formatDateTime, formatPercent, httpStatus } from './reportFormat';
+import type { ReportView } from '@/types/report';
+import { formatDateTime, httpStatus } from './reportFormat';
 
-const SEVERITIES: { key: Severity; label: string }[] = [
-  { key: Severity.CRITICAL, label: 'Crítica' },
-  { key: Severity.HIGH, label: 'Alta' },
-  { key: Severity.MEDIUM, label: 'Media' },
-  { key: Severity.LOW, label: 'Baja' },
+const VIEWS: { view: ReportView; label: string; hint: string }[] = [
+  { view: 'technical', label: 'Vista técnica', hint: 'Detalle completo: políticas, hallazgos, evidencia y trazabilidad' },
+  { view: 'executive', label: 'Vista ejecutiva', hint: 'Solo métricas y recomendaciones, sin fragmentos de código' },
 ];
 
 const STATUS_LABELS: Record<string, string> = { GENERATED: 'Generado' };
 
 export default function ReportDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { data: report, isLoading, isError, error } = useReport(id);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const view: ReportView = searchParams.get('view') === 'executive' ? 'executive' : 'technical';
+  const { data: report, isLoading, isError, error, isFetching } = useReport(id, view);
+
+  function selectView(next: ReportView) {
+    setSearchParams(next === 'executive' ? { view: 'executive' } : {}, { replace: true });
+  }
 
   return (
     <div className="space-y-5">
@@ -31,24 +35,9 @@ export default function ReportDetailPage() {
         </div>
       )}
 
-      {isError && (
-        <div
-          role={httpStatus(error) === 403 ? 'status' : 'alert'}
-          className={`px-4 py-3 text-sm rounded-lg border ${
-            httpStatus(error) === 403
-              ? 'bg-neutral-50 border-neutral-200 text-neutral-600'
-              : 'bg-red-50 border-red-200 text-red-600'
-          }`}
-        >
-          {httpStatus(error) === 403
-            ? 'Los reportes de cumplimiento están disponibles para los roles Auditor y Security Admin.'
-            : httpStatus(error) === 404
-              ? 'El reporte no existe.'
-              : 'No se pudo cargar el reporte.'}
-        </div>
-      )}
+      {isError && <ReportError status={httpStatus(error)} />}
 
-      {report && (
+      {report && !isError && (
         <>
           <div className="page-header flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -56,16 +45,28 @@ export default function ReportDetailPage() {
                 <h1 className="page-title">Reporte de cumplimiento</h1>
                 <span className="badge bg-neutral-900 text-white">{STATUS_LABELS[report.status] ?? report.status}</span>
               </div>
-              <p className="page-subtitle">{report.repositoryName ?? 'Repositorio sin nombre'}</p>
+              <p className="page-subtitle">
+                {report.metadata.repoName ?? 'Repositorio sin nombre'} · generado {formatDateTime(report.metadata.generatedAt)}
+                {report.metadata.generatedBy && ` por ${report.metadata.generatedBy}`}
+              </p>
+            </div>
+            <div role="group" aria-label="Vista del reporte" className="inline-flex rounded-lg border border-neutral-200 p-0.5 bg-white">
+              {VIEWS.map((option) => (
+                <button
+                  key={option.view}
+                  type="button"
+                  aria-pressed={view === option.view}
+                  title={option.hint}
+                  onClick={() => selectView(option.view)}
+                  className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+                    view === option.view ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-100'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
           </div>
-
-          {!report.integrityVerified && (
-            <div role="alert" className="px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
-              El checksum almacenado de este reporte no coincide con su contenido. Sus exportaciones se rechazan y el
-              incidente queda registrado en la auditoría.
-            </div>
-          )}
 
           <section className="card p-5 space-y-3" aria-labelledby="exportaciones">
             <h2 id="exportaciones" className="text-sm font-semibold text-neutral-900">
@@ -74,64 +75,32 @@ export default function ReportDetailPage() {
             <ReportDownloadButtons report={report} />
           </section>
 
-          <section className="grid grid-cols-2 lg:grid-cols-4 gap-4" aria-label="Resumen">
-            <Kpi label="Cumplimiento" value={formatPercent(report.compliancePercentage)} />
-            <Kpi label="Cumplimiento ponderado" value={formatPercent(report.weightedCompliancePercentage)} />
-            <Kpi label="Políticas evaluadas" value={report.policiesEvaluated ?? '—'} />
-            <Kpi label="Hallazgos" value={report.totalFindings ?? '—'} />
-          </section>
-
-          {report.findingsBySeverity && (
-            <section className="card p-5">
-              <h2 className="text-sm font-semibold text-neutral-900 mb-3">Hallazgos por severidad</h2>
-              <div className="flex flex-wrap gap-4">
-                {SEVERITIES.map(({ key, label }) => (
-                  <span key={key} className="flex items-center gap-2 text-sm">
-                    <span className={`badge border ${SEVERITY_COLOR_CLASSES[key]}`}>{label}</span>
-                    <span className="tabular-nums font-semibold">{report.findingsBySeverity?.[key] ?? 0}</span>
-                  </span>
-                ))}
-              </div>
-            </section>
-          )}
-
-          <section className="card p-5">
-            <h2 className="text-sm font-semibold text-neutral-900 mb-3">Metadatos</h2>
-            <dl className="grid grid-cols-1 sm:grid-cols-[12rem_1fr] gap-x-4 gap-y-2 text-sm">
-              <dt className="text-neutral-500">Identificador</dt>
-              <dd className="font-mono text-xs break-all">{report.id}</dd>
-              <dt className="text-neutral-500">Análisis</dt>
-              <dd>
-                {report.analysisId ? (
-                  <Link to={`/analyses/${report.analysisId}/results`} className="font-mono text-xs hover:underline">
-                    {report.analysisId}
-                  </Link>
-                ) : (
-                  '—'
-                )}
-              </dd>
-              <dt className="text-neutral-500">Generado</dt>
-              <dd>
-                {formatDateTime(report.generatedAt)}
-                {report.generatedBy && <span className="text-neutral-500"> por {report.generatedBy}</span>}
-              </dd>
-              <dt className="text-neutral-500">Checksum SHA-256</dt>
-              <dd className="font-mono text-xs break-all">{report.checksum}</dd>
-              <dt className="text-neutral-500">Integridad</dt>
-              <dd>{report.integrityVerified ? 'Verificada' : 'El contenido no coincide con el checksum'}</dd>
-            </dl>
-          </section>
+          <div className={isFetching ? 'opacity-60 transition-opacity' : undefined} aria-busy={isFetching}>
+            <ReportPreview report={report} />
+          </div>
         </>
       )}
     </div>
   );
 }
 
-function Kpi({ label, value }: { label: string; value: string | number }) {
+function ReportError({ status }: { status: number | undefined }) {
+  if (status === 403) {
+    return (
+      <div role="status" className="px-4 py-3 bg-neutral-50 border border-neutral-200 text-neutral-600 text-sm rounded-lg">
+        Los reportes de cumplimiento están disponibles para los roles Auditor y Security Admin.
+      </div>
+    );
+  }
+  const message =
+    status === 404
+      ? 'El reporte no existe.'
+      : status === 409
+        ? 'El contenido de este reporte no coincide con su checksum: fue alterado después de generarse. No se muestra ni se puede exportar, y el incidente quedó registrado en la auditoría.'
+        : 'No se pudo cargar el reporte.';
   return (
-    <div className="card p-5">
-      <div className="text-2xl font-bold tabular-nums text-neutral-900">{value}</div>
-      <div className="text-xs text-neutral-500 mt-1">{label}</div>
+    <div role="alert" className="px-4 py-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg">
+      {message}
     </div>
   );
 }
