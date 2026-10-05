@@ -4,23 +4,34 @@ import type {
   ReportExportFormat,
   ReportPage,
   ReportResponse,
-  ReportSummary,
+  ReportView,
+  StructuredReport,
 } from '@/types/report';
 
 export async function generateReport(analysisId: string): Promise<ReportResponse> {
-  const { data } = await axiosInstance.post<ReportResponse>('/api/v1/reports', { analysisId });
+  const { data } = await axiosInstance.post<ReportResponse>(`/api/v1/analyses/${analysisId}/reports`);
   return data;
 }
 
-export async function listReports(page = 0, size = 20, analysisId?: string): Promise<ReportPage> {
+export interface ReportHistoryFilter {
+  repositoryId?: string;
+  analysisId?: string;
+}
+
+export async function listReports(page = 0, size = 20, filter: ReportHistoryFilter = {}): Promise<ReportPage> {
   const { data } = await axiosInstance.get<ReportPage>('/api/v1/reports', {
-    params: { page, size, ...(analysisId ? { analysisId } : {}) },
+    params: {
+      page,
+      size,
+      ...(filter.repositoryId ? { repositoryId: filter.repositoryId } : {}),
+      ...(filter.analysisId ? { analysisId: filter.analysisId } : {}),
+    },
   });
   return data;
 }
 
-export async function getReport(reportId: string): Promise<ReportSummary> {
-  const { data } = await axiosInstance.get<ReportSummary>(`/api/v1/reports/${reportId}`);
+export async function getReport(reportId: string, view: ReportView = 'technical'): Promise<StructuredReport> {
+  const { data } = await axiosInstance.get<StructuredReport>(`/api/v1/reports/${reportId}`, { params: { view } });
   return data;
 }
 

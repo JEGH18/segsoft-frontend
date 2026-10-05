@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useReports } from '@/hooks/useReports';
 import Spinner from '@/components/reports/Spinner';
 import { formatDateTime, formatPercent, httpStatus } from './reportFormat';
 
 export default function ReportListPage() {
   const [page, setPage] = useState(0);
-  const { data, isLoading, isError, error } = useReports(page);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const repositoryId = searchParams.get('repositoryId') ?? undefined;
+  const { data, isLoading, isError, error } = useReports(page, { repositoryId });
 
   return (
     <div className="space-y-5">
@@ -16,6 +18,24 @@ export default function ReportListPage() {
           Reportes congelados a partir de análisis completados. Ábrelos para descargarlos en PDF o SARIF.
         </p>
       </div>
+
+      {repositoryId && (
+        <div className="flex items-center gap-2 text-sm">
+          <span className="badge bg-neutral-100 text-neutral-700">
+            Histórico de un repositorio{data?.content[0]?.repositoryName ? `: ${data.content[0].repositoryName}` : ''}
+          </span>
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => {
+              setPage(0);
+              setSearchParams({});
+            }}
+          >
+            Ver todos
+          </button>
+        </div>
+      )}
 
       {isLoading && (
         <div className="flex items-center gap-2 text-sm text-neutral-500">
