@@ -6,6 +6,7 @@ import { useApplyPolicySet, usePolicies, usePolicySelection, useSavePolicySelect
 import { useCreatePolicySet, usePolicySets } from '@/hooks/usePolicySets';
 import { Category, Framework } from '@/types/enums';
 import type { Policy } from '@/types/policy';
+import SelectAllCheckbox from '@/components/common/SelectAllCheckbox';
 
 interface PolicySelectionViewProps {
   repositoryId?: string;
@@ -244,6 +245,17 @@ export default function PolicySelectionView({ repositoryId }: PolicySelectionVie
       return effectiveSelectedIds.filter((id) => id !== policyId);
     });
   };
+
+  // Same effects as ticking boxes one by one (see onTogglePolicy), applied
+  // to the whole visible list at once by "Seleccionar todas".
+  const onReplaceSelection = (policyIds: string[]) => {
+    setSuccessMessage(null);
+    setIsDirty(true);
+    setPreviewPolicySetId(null);
+    setSelectedPolicyIds(policyIds);
+  };
+
+  const isFiltered = search.trim() !== '' || categoryFilter !== 'ALL' || frameworkFilter !== 'ALL';
 
   const onSave = async () => {
     if (!resolvedRepositoryId) return;
@@ -515,6 +527,14 @@ export default function PolicySelectionView({ repositoryId }: PolicySelectionVie
           </div>
 
           <div className="card overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-neutral-200 bg-white">
+              <SelectAllCheckbox
+                visibleIds={filteredPolicies.map((policy) => policy.id)}
+                selectedIds={effectiveSelectedIds}
+                onChange={onReplaceSelection}
+                filtered={isFiltered}
+              />
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <caption className="sr-only">Políticas disponibles</caption>
