@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { exportReport, fileNameFromDisposition } from '@/api/reports';
+import { exportReport, fileNameFromDisposition, generateReport, getReport, listReports } from '@/api/reports';
 import axiosInstance from '@/utils/axiosInstance';
 
 describe('report export API', () => {
@@ -30,5 +30,20 @@ describe('report export API', () => {
     const file = await exportReport('r1', 'sarif');
     expect(file.fileName).toBe('segsoft-report-r1.sarif');
     expect(file.cache).toBeNull();
+  });
+
+  it('generates a report on the analysis endpoint', async () => {
+    vi.spyOn(axiosInstance, 'post').mockResolvedValue({ data: { id: 'r1', url: '/api/v1/reports/r1' } });
+    const report = await generateReport('a1');
+    expect(axiosInstance.post).toHaveBeenCalledWith('/api/v1/analyses/a1/reports');
+    expect(report.url).toBe('/api/v1/reports/r1');
+  });
+
+  it('requests the selected view and filters the history by repository', async () => {
+    const get = vi.spyOn(axiosInstance, 'get').mockResolvedValue({ data: {} });
+    await getReport('r1', 'executive');
+    expect(get).toHaveBeenCalledWith('/api/v1/reports/r1', { params: { view: 'executive' } });
+    await listReports(0, 20, { repositoryId: 'repo-1' });
+    expect(get).toHaveBeenLastCalledWith('/api/v1/reports', { params: { page: 0, size: 20, repositoryId: 'repo-1' } });
   });
 });

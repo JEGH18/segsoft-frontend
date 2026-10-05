@@ -60,6 +60,7 @@ describe('GenerateReportButton', () => {
       status: 'GENERATED',
       checksum: 'a'.repeat(64),
       generatedAt: '2026-10-04T18:00:00Z',
+      url: `/api/v1/reports/${REPORT_ID}`,
     });
     renderButton();
 
