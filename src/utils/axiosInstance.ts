@@ -1,8 +1,12 @@
 import axios from 'axios';
 import { clearAccessToken, getAccessToken, setAccessToken } from './tokenStorage';
 
+// Without VITE_API_BASE_URL the API is called on the same origin (/api/...), e.g. through
+// the Vercel rewrite to the backend in vercel.json.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
+
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL as string,
+  baseURL: API_BASE_URL,
   withCredentials: true, // sends the httpOnly refresh_token cookie automatically
 });
 
@@ -29,7 +33,7 @@ axiosInstance.interceptors.response.use(
       try {
         // Cookie is sent automatically; no need to pass refreshToken in body
         const { data } = await axios.post<{ accessToken: string }>(
-          `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/refresh`,
+          `${API_BASE_URL}/api/v1/auth/refresh`,
           {},
           { withCredentials: true },
         );
