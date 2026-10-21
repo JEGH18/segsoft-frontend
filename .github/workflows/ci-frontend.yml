@@ -1,29 +1,25 @@
 name: CI Frontend
 
+# Este repo (segsoft-frontend) es solo el frontend: ya no vive anidado dentro de un
+# monorepo, así que no hace falta filtrar por paths ni fijar working-directory.
+# El CI oficial del proyecto corre en el Jenkins de p2tools (ver Jenkinsfile).
+
 on:
   push:
     branches: [main]
-    paths:
-      - 'frontend/**'
   pull_request:
     branches: [main]
-    paths:
-      - 'frontend/**'
 
 jobs:
   test-frontend:
     name: Lint, Test and Build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend/pdgseg-frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
-          cache-dependency-path: frontend/pdgseg-frontend/package-lock.json
       - run: npm ci
       - run: npm run lint
       - run: npm test
