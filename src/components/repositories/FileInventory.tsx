@@ -184,6 +184,7 @@ export default function FileInventory({ repositoryId }: Props) {
               id="language-filter"
               type="text"
               placeholder="ej. java, python…"
+              aria-label="Filtrar por lenguaje"
               value={languageInput}
               onChange={(e) => setLanguageInput(e.target.value)}
               className="form-input w-44"
@@ -298,6 +299,7 @@ export default function FileInventory({ repositoryId }: Props) {
                   type="button"
                   onClick={() => handlePageChange(data.page - 1)}
                   disabled={data.page === 0}
+                  aria-label="Página anterior"
                   className="btn-outline text-xs px-3 py-1.5"
                 >
                   ← Anterior
@@ -309,6 +311,7 @@ export default function FileInventory({ repositoryId }: Props) {
                   type="button"
                   onClick={() => handlePageChange(data.page + 1)}
                   disabled={data.page >= data.totalPages - 1}
+                  aria-label="Página siguiente"
                   className="btn-outline text-xs px-3 py-1.5"
                 >
                   Siguiente →
