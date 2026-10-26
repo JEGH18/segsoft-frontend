@@ -58,6 +58,11 @@ describe('LoginForm', () => {
     expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
   });
 
+  it('links to account creation', () => {
+    renderLoginForm();
+    expect(screen.getByRole('link', { name: /crear cuenta/i })).toHaveAttribute('href', '/register');
+  });
+
   it('shows error when submitting without username', async () => {
     renderLoginForm();
     await userEvent.click(screen.getByRole('button', { name: /ingresar/i }));
