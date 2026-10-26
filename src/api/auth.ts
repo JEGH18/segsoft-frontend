@@ -1,8 +1,19 @@
 import axiosInstance from '@/utils/axiosInstance';
-import { AuthResponse, LoginRequest, UserResponse } from '@/types/auth';
+import { AuthResponse, LoginRequest, RegisterRequest, RegistrationStatus, UserResponse } from '@/types/auth';
 
 export async function login(data: LoginRequest): Promise<AuthResponse> {
   const response = await axiosInstance.post<AuthResponse>('/api/v1/auth/login', data);
+  return response.data;
+}
+
+/** Creates a DEVELOPER account and starts its session (refresh token in an httpOnly cookie). */
+export async function register(data: RegisterRequest): Promise<AuthResponse> {
+  const response = await axiosInstance.post<AuthResponse>('/api/v1/auth/register', data);
+  return response.data;
+}
+
+export async function registrationStatus(): Promise<RegistrationStatus> {
+  const response = await axiosInstance.get<RegistrationStatus>('/api/v1/auth/registration');
   return response.data;
 }
 
