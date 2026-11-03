@@ -148,6 +148,68 @@ describe('RepositoryUploadPage', () => {
     });
   });
 
+  it('clones a private Bitbucket repo pasted from the Clone button, sending the token separately', async () => {
+    vi.mocked(api.cloneGit).mockResolvedValue({
+      ...mockGitRepo,
+      gitUrl: 'https://bitbucket.org/pi2tools/segsoft.git',
+    });
+    renderPage();
+
+    await userEvent.click(screen.getByText('URL Git'));
+    await userEvent.type(
+      screen.getByPlaceholderText(/github\.com/i),
+      'git clone https://david@bitbucket.org/pi2tools/segsoft.git',
+    );
+    await userEvent.type(screen.getByPlaceholderText(/repositorios privados/i), 'ATATT3xFf=AB12');
+    await userEvent.click(screen.getByRole('button', { name: /clonar repositorio/i }));
+
+    await waitFor(() => expect(api.cloneGit).toHaveBeenCalled());
+    expect(api.cloneGit).toHaveBeenCalledWith({
+      gitUrl: 'https://bitbucket.org/pi2tools/segsoft.git',
+      branch: 'main',
+      accessToken: 'ATATT3xFf=AB12',
+    });
+  });
+
+  it('shows Bitbucket token guidance only for Bitbucket URLs', async () => {
+    renderPage();
+    await userEvent.click(screen.getByText('URL Git'));
+    const urlInput = screen.getByPlaceholderText(/github\.com/i);
+
+    await userEvent.type(urlInput, 'https://github.com/user/repo.git');
+    expect(screen.queryByText(/read:repository:bitbucket/i)).not.toBeInTheDocument();
+
+    await userEvent.clear(urlInput);
+    await userEvent.type(urlInput, 'https://bitbucket.org/pi2tools/repo.git');
+    expect(screen.getByText(/read:repository:bitbucket/i)).toBeInTheDocument();
+  });
+
+  it('clones a p2tools repo from its page URL, sending the clone URL and the token separately', async () => {
+    vi.mocked(api.cloneGit).mockResolvedValue({
+      ...mockGitRepo,
+      gitUrl: 'https://pi2tools.icesi.edu.co/bitbucket/scm/segsoft/segsoft-backend.git',
+    });
+    renderPage();
+
+    await userEvent.click(screen.getByText('URL Git'));
+    await userEvent.type(
+      screen.getByPlaceholderText(/github\.com/i),
+      'https://pi2tools.icesi.edu.co/bitbucket/projects/SEGSOFT/repos/segsoft-backend/browse',
+    );
+    expect(screen.getByText(/tokens de acceso http/i)).toBeInTheDocument();
+    expect(screen.queryByText(/read:repository:bitbucket/i)).not.toBeInTheDocument();
+
+    await userEvent.type(screen.getByPlaceholderText(/repositorios privados/i), 'BBDC-secret');
+    await userEvent.click(screen.getByRole('button', { name: /clonar repositorio/i }));
+
+    await waitFor(() => expect(api.cloneGit).toHaveBeenCalled());
+    expect(api.cloneGit).toHaveBeenCalledWith({
+      gitUrl: 'https://pi2tools.icesi.edu.co/bitbucket/scm/segsoft/segsoft-backend.git',
+      branch: 'main',
+      accessToken: 'BBDC-secret',
+    });
+  });
+
   it('shows API error message when upload fails', async () => {
     vi.mocked(api.uploadZip).mockRejectedValue({
       response: { data: { message: 'ZIP bomb detectada' } },
