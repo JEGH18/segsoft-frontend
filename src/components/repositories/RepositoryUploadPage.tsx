@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { uploadZip, cloneGit } from '@/api/repositories';
 import type { RepositoryResponse, SourceType } from '@/types/repository';
+import { bitbucketKind, normalizeGitUrl } from '@/utils/gitUrl';
 
 const STATUS_LABELS: Record<string, string> = {
   UPLOADING: 'Subiendo...',
@@ -33,6 +34,7 @@ export default function RepositoryUploadPage() {
   const [error, setError] = useState('');
   const [result, setResult] = useState<RepositoryResponse | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bitbucket = bitbucketKind(gitUrl);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
@@ -73,7 +75,7 @@ export default function RepositoryUploadPage() {
       const resp = sourceType === 'ZIP'
         ? await uploadZip(file!)
         : await cloneGit({
-            gitUrl: gitUrl.trim(),
+            gitUrl: normalizeGitUrl(gitUrl),
             branch: branch.trim() || 'main',
             accessToken: accessToken.trim() || undefined,
           });
@@ -101,7 +103,7 @@ export default function RepositoryUploadPage() {
     <div className="max-w-2xl mx-auto">
       <div className="page-header">
         <h2 className="page-title">Cargar repositorio</h2>
-        <p className="page-subtitle">Sube un ZIP o proporciona una URL Git pública para iniciar el análisis.</p>
+        <p className="page-subtitle">Sube un ZIP o proporciona la URL de un repositorio de GitHub, GitLab, Bitbucket o p2tools para iniciar el análisis.</p>
       </div>
 
       {result ? (
@@ -165,10 +167,16 @@ export default function RepositoryUploadPage() {
                   type="url"
                   value={gitUrl}
                   onChange={(e) => setGitUrl(e.target.value)}
-                  placeholder="https://github.com/usuario/repo.git"
+                  placeholder="https://github.com/usuario/repo.git · https://pi2tools.icesi.edu.co/bitbucket/scm/proyecto/repo.git"
                   required
                   className="form-input"
                 />
+                {bitbucket && (
+                  <p className="text-xs text-neutral-400 mt-1">
+                    Puedes pegar tal cual lo que copia el botón «Clone» de Bitbucket; el usuario incluido en la URL se descarta.
+                    {bitbucket === 'server' && ' También sirve la dirección de la página del repositorio.'}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="form-label block mb-1.5">Rama</label>
@@ -190,6 +198,16 @@ export default function RepositoryUploadPage() {
                   autoComplete="off"
                   className="form-input"
                 />
+                {bitbucket === 'cloud' && (
+                  <p className="text-xs text-neutral-600 mt-1">
+                    Bitbucket: usa un API token de tu cuenta Atlassian con el permiso <span className="font-mono">read:repository:bitbucket</span>, o un access token del repositorio, proyecto o workspace.
+                  </p>
+                )}
+                {bitbucket === 'server' && (
+                  <p className="text-xs text-neutral-600 mt-1">
+                    p2tools: crea un token HTTP de acceso en tu perfil (Administrar cuenta → Tokens de acceso HTTP) con permiso de lectura de repositorios. También sirve un token del proyecto o del repositorio.
+                  </p>
+                )}
                 <p className="text-xs text-neutral-400 mt-1">
                   Se usa una sola vez para clonar y no se almacena ni se muestra en ningún lado.
                 </p>
