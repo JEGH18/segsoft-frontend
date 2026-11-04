@@ -1,13 +1,14 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { login as apiLogin, me } from '@/api/auth';
 import { useAuth } from '@/store/authStore';
 import { setAccessToken } from '@/utils/tokenStorage';
 import { AlertIcon, ArrowIcon, LockIcon, ShieldIcon, UserIcon } from '@/components/auth/AuthIcons';
 import ResendVerificationButton from '@/components/auth/ResendVerificationButton';
+import { clearSessionEndedNotice, readSessionEndedNotice } from '@/utils/sessionNotice';
 
 const schema = z.object({
   username: z.string().min(1, 'El usuario es requerido'),
@@ -19,8 +20,13 @@ type FormData = z.infer<typeof schema>;
 export default function LoginForm() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [serverError, setServerError] = useState<string | null>(null);
+  // Why the previous session was ended (e.g. the account got locked), shown once.
+  const [serverError, setServerError] = useState<string | null>(readSessionEndedNotice);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    clearSessionEndedNotice();
+  }, []);
 
   const {
     register,

@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import LoginForm from '@/components/auth/LoginForm';
 import { AuthContext } from '@/store/authStore';
 import type { UserResponse } from '@/types/auth';
+import { readSessionEndedNotice, saveSessionEndedNotice } from '@/utils/sessionNotice';
 
 vi.mock('@/api/auth', () => ({
   login: vi.fn(),
@@ -193,5 +194,16 @@ describe('LoginForm', () => {
 
     expect(await screen.findByText('Credenciales inválidas')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /reenviar correo/i })).not.toBeInTheDocument();
+  });
+  it('says why the previous session was ended, only once', () => {
+    saveSessionEndedNotice('La cuenta está bloqueada por demasiados intentos fallidos. Intenta de nuevo en 30 minutos.');
+
+    const { unmount } = renderLoginForm();
+    expect(screen.getByRole('alert')).toHaveTextContent('La cuenta está bloqueada');
+    expect(readSessionEndedNotice()).toBeNull();
+    unmount();
+
+    renderLoginForm();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });
