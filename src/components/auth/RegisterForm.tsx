@@ -2,15 +2,16 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useEffect, useState, type ChangeEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { me, register as apiRegister, registrationStatus } from '@/api/auth';
-import { useAuth } from '@/store/authStore';
-import { setAccessToken } from '@/utils/tokenStorage';
-import { AlertIcon, ArrowIcon, LockIcon, ShieldIcon, UserIcon } from '@/components/auth/AuthIcons';
+import { Link } from 'react-router-dom';
+import { register as apiRegister, registrationStatus } from '@/api/auth';
+import { AlertIcon, ArrowIcon, LockIcon, MailIcon, ShieldIcon, UserIcon } from '@/components/auth/AuthIcons';
+import ResendVerificationButton, { RESEND_COOLDOWN_SECONDS } from '@/components/auth/ResendVerificationButton';
+import type { RegistrationResponse } from '@/types/auth';
 
 // Same rules as the backend (RegisterRequest and PasswordPolicyValidator). The backend also
-// rejects common passwords, reserved names and taken names; those errors come back from the API.
+// rejects common passwords, reserved names and taken names or emails; those errors come back from the API.
 const USERNAME_PATTERN = /^[a-z][a-z0-9._-]{2,49}$/;
+const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 const PASSWORD_RULES = [
   { id: 'length', label: 'Al menos 12 caracteres', test: (p: string) => p.length >= 12 },
@@ -31,6 +32,13 @@ const schema = z
         USERNAME_PATTERN,
         'Entre 3 y 50 caracteres: empieza con una letra y usa solo letras, números, ".", "_" o "-"',
       ),
+    email: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .min(1, 'El correo es requerido')
+      .max(254, 'El correo no puede tener más de 254 caracteres')
+      .regex(EMAIL_PATTERN, 'El correo no es válido'),
     password: z
       .string()
       .min(1, 'La contraseña es requerida')
@@ -50,7 +58,7 @@ interface ApiError {
     data?: {
       errorCode?: string;
       message?: string;
-      errors?: Partial<Record<'username' | 'password', string>>;
+      errors?: Partial<Record<'username' | 'email' | 'password', string>>;
     };
   };
 }
@@ -69,10 +77,9 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 }
 
 export default function RegisterForm() {
-  const { login } = useAuth();
-  const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
   const [enabled, setEnabled] = useState(true);
+  const [registered, setRegistered] = useState<RegistrationResponse | null>(null);
 
   const {
     register,
@@ -100,21 +107,25 @@ export default function RegisterForm() {
   const onSubmit = async (data: FormData) => {
     setServerError(null);
     try {
-      const authResponse = await apiRegister({ username: data.username, password: data.password });
-      setAccessToken(authResponse.accessToken);
-      const userResponse = await me();
-      login(userResponse, authResponse.accessToken);
-      navigate('/', { replace: true });
+      setRegistered(
+        await apiRegister({ username: data.username, email: data.email, password: data.password }),
+      );
     } catch (err: unknown) {
       const { response } = err as ApiError;
       const fieldErrors = response?.data?.errors;
-      if (fieldErrors?.username || fieldErrors?.password) {
+      if (fieldErrors?.username || fieldErrors?.email || fieldErrors?.password) {
         if (fieldErrors.username) setError('username', { message: fieldErrors.username });
+        if (fieldErrors.email) setError('email', { message: fieldErrors.email });
         if (fieldErrors.password) setError('password', { message: fieldErrors.password });
         return;
       }
       const message = response?.data?.message;
-      // Taken (409) or reserved (400 VALIDATION_ERROR) names belong next to the username field.
+      // A taken email (409) goes next to the email field; taken (409) or reserved (400
+      // VALIDATION_ERROR) names next to the username field.
+      if (message && response?.status === 409 && /correo/i.test(message)) {
+        setError('email', { message });
+        return;
+      }
       const usernameRejected =
         response?.status === 409 ||
         (response?.status === 400 && response.data?.errorCode === 'VALIDATION_ERROR');
@@ -139,9 +150,21 @@ export default function RegisterForm() {
         </div>
 
         <div className="card p-8">
-          <h1 className="text-2xl font-bold text-neutral-900 mb-1">Crear cuenta</h1>
+          <h1 className="text-2xl font-bold text-neutral-900 mb-1">
+            {registered ? 'Revisa tu correo' : 'Crear cuenta'}
+          </h1>
 
-          {!enabled ? (
+          {registered ? (
+            <div role="status" className="mt-4 text-sm text-neutral-600 space-y-4">
+              <p>
+                Creamos la cuenta <span className="font-medium text-neutral-900">{registered.username}</span> y
+                enviamos un enlace de verificación a{' '}
+                <span className="font-medium text-neutral-900">{registered.email}</span>.
+              </p>
+              <p>Ábrelo para activar la cuenta. Vence en 24 horas; si no lo ves, revisa la carpeta de spam.</p>
+              <ResendVerificationButton email={registered.email} initialCooldown={RESEND_COOLDOWN_SECONDS} />
+            </div>
+          ) : !enabled ? (
             <div role="status" className="mt-4 text-sm text-neutral-600 space-y-4">
               <p>El registro de nuevas cuentas está deshabilitado. Pide una cuenta al administrador de SegSoft.</p>
               {serverError && <p className="text-red-700">{serverError}</p>}
@@ -196,6 +219,36 @@ export default function RegisterForm() {
                   ) : (
                     <p id="username-hint" className="mt-1.5 text-xs text-neutral-500">
                       Se guarda en minúsculas. Lo usarás para iniciar sesión.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="email" className="form-label block mb-1.5">
+                    Correo
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <MailIcon />
+                    </span>
+                    <input
+                      id="email"
+                      type="email"
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      placeholder="nombre@correo.com"
+                      aria-invalid={!!errors.email}
+                      aria-describedby={errors.email ? 'email-error' : 'email-hint'}
+                      className={fieldClass(!!errors.email)}
+                      {...register('email')}
+                    />
+                  </div>
+                  {errors.email ? (
+                    <FieldError id="email-error" message={errors.email.message} />
+                  ) : (
+                    <p id="email-hint" className="mt-1.5 text-xs text-neutral-500">
+                      Te enviaremos un enlace para verificarlo. Solo puede usarse en una cuenta.
                     </p>
                   )}
                 </div>

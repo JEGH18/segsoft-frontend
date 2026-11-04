@@ -4,12 +4,12 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import RegisterForm from '@/components/auth/RegisterForm';
 import { AuthContext } from '@/store/authStore';
-import type { UserResponse } from '@/types/auth';
 
 vi.mock('@/api/auth', () => ({
   login: vi.fn(),
   register: vi.fn(),
   registrationStatus: vi.fn(),
+  resendVerification: vi.fn(),
   me: vi.fn(),
   logout: vi.fn(),
   refresh: vi.fn(),
@@ -54,8 +54,14 @@ function renderRegisterForm() {
   );
 }
 
-async function fillForm(username: string, password: string, confirmation = password) {
+async function fillForm(
+  username: string,
+  password: string,
+  confirmation = password,
+  email = `${username.toLowerCase()}@example.com`,
+) {
   await userEvent.type(screen.getByLabelText(/^usuario$/i), username);
+  if (email) await userEvent.type(screen.getByLabelText(/^correo$/i), email);
   await userEvent.type(screen.getByLabelText(/^contraseña$/i), password);
   await userEvent.type(screen.getByLabelText(/confirmar contraseña/i), confirmation);
   await userEvent.click(screen.getByRole('button', { name: /crear cuenta/i }));
@@ -70,6 +76,7 @@ describe('RegisterForm', () => {
   it('renders the fields and explains that the account is a Developer', () => {
     renderRegisterForm();
     expect(screen.getByLabelText(/^usuario$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^correo$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^contraseña$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/confirmar contraseña/i)).toBeInTheDocument();
     expect(screen.getByText('Developer')).toBeInTheDocument();
@@ -88,36 +95,55 @@ describe('RegisterForm', () => {
     expect(rules.querySelectorAll('[data-ok="true"]')).toHaveLength(5);
   });
 
-  it('validates the username format, the password rules and the confirmation before calling the API', async () => {
+  it('validates the username, the email, the password rules and the confirmation before calling the API', async () => {
     renderRegisterForm();
-    await fillForm('1malo', 'corta', 'otra');
+    await fillForm('1malo', 'corta', 'otra', 'sin-arroba');
 
     await waitFor(() => {
       expect(screen.getByText(/empieza con una letra/i)).toBeInTheDocument();
     });
+    expect(screen.getByText('El correo no es válido')).toBeInTheDocument();
     expect(screen.getByText(/no cumple todos los requisitos/i)).toBeInTheDocument();
     expect(screen.getByText(/las contraseñas no coinciden/i)).toBeInTheDocument();
     expect(authApi.register).not.toHaveBeenCalled();
   });
 
-  it('registers a lowercase username, starts the session and goes to the dashboard', async () => {
-    const newUser: UserResponse = { id: '1', username: 'juan.gomez', roles: ['DEVELOPER'] };
+  it('registers a lowercase username and email, and asks to check the inbox without starting a session', async () => {
     vi.mocked(authApi.register).mockResolvedValue({
-      accessToken: 'at',
-      refreshToken: 'rt',
-      tokenType: 'Bearer',
-      roles: ['DEVELOPER'],
+      username: 'juan.gomez',
+      email: 'juan@example.com',
+      message: 'Te enviamos un enlace',
     });
-    vi.mocked(authApi.me).mockResolvedValue(newUser);
 
     renderRegisterForm();
-    await fillForm('Juan.Gomez', STRONG_PASSWORD);
+    await fillForm('Juan.Gomez', STRONG_PASSWORD, STRONG_PASSWORD, '  Juan@Example.com ');
 
     await waitFor(() => {
-      expect(authApi.register).toHaveBeenCalledWith({ username: 'juan.gomez', password: STRONG_PASSWORD });
+      expect(authApi.register).toHaveBeenCalledWith({
+        username: 'juan.gomez',
+        email: 'juan@example.com',
+        password: STRONG_PASSWORD,
+      });
     });
-    expect(mockLogin).toHaveBeenCalledWith(newUser, 'at');
-    expect(await screen.findByText('Dashboard')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /revisa tu correo/i })).toBeInTheDocument();
+    expect(screen.getByText('juan@example.com')).toBeInTheDocument();
+    expect(screen.queryByRole('form', { name: /formulario de registro/i })).not.toBeInTheDocument();
+    // The link was just sent: resending waits for the cooldown.
+    expect(screen.getByRole('button', { name: /reenviar correo \(60 s\)/i })).toBeDisabled();
+    expect(mockLogin).not.toHaveBeenCalled();
+  });
+
+  it('shows a taken email next to the email field', async () => {
+    vi.mocked(authApi.register).mockRejectedValue({
+      response: { status: 409, data: { errorCode: 'CONFLICT', message: 'Ese correo ya está registrado en otra cuenta' } },
+    });
+
+    renderRegisterForm();
+    await fillForm('nuevo', STRONG_PASSWORD);
+
+    expect(await screen.findByText('Ese correo ya está registrado en otra cuenta')).toBeInTheDocument();
+    expect(screen.getByLabelText(/^correo$/i)).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText(/^usuario$/i)).toHaveAttribute('aria-invalid', 'false');
   });
 
   it('shows a taken username next to the username field', async () => {

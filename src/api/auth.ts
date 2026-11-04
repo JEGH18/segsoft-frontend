@@ -1,14 +1,21 @@
 import axiosInstance from '@/utils/axiosInstance';
-import { AuthResponse, LoginRequest, RegisterRequest, RegistrationStatus, UserResponse } from '@/types/auth';
+import {
+  AuthResponse,
+  LoginRequest,
+  RegisterRequest,
+  RegistrationResponse,
+  RegistrationStatus,
+  UserResponse,
+} from '@/types/auth';
 
 export async function login(data: LoginRequest): Promise<AuthResponse> {
   const response = await axiosInstance.post<AuthResponse>('/api/v1/auth/login', data);
   return response.data;
 }
 
-/** Creates a DEVELOPER account and starts its session (refresh token in an httpOnly cookie). */
-export async function register(data: RegisterRequest): Promise<AuthResponse> {
-  const response = await axiosInstance.post<AuthResponse>('/api/v1/auth/register', data);
+/** Creates a DEVELOPER account and emails it a verification link; it does not start a session. */
+export async function register(data: RegisterRequest): Promise<RegistrationResponse> {
+  const response = await axiosInstance.post<RegistrationResponse>('/api/v1/auth/register', data);
   return response.data;
 }
 
@@ -31,4 +38,15 @@ export async function logout(): Promise<void> {
 export async function me(): Promise<UserResponse> {
   const response = await axiosInstance.get<UserResponse>('/api/v1/auth/me');
   return response.data;
+}
+
+/** Consumes the emailed link and starts the session (refresh token in an httpOnly cookie). */
+export async function verifyEmail(token: string): Promise<AuthResponse> {
+  const response = await axiosInstance.post<AuthResponse>('/api/v1/auth/verify-email', { token });
+  return response.data;
+}
+
+/** Sends a new link if the email belongs to an unverified account; answers the same otherwise. */
+export async function resendVerification(email: string): Promise<void> {
+  await axiosInstance.post('/api/v1/auth/resend-verification', { email });
 }

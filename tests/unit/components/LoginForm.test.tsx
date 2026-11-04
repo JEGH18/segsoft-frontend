@@ -8,6 +8,7 @@ import type { UserResponse } from '@/types/auth';
 
 vi.mock('@/api/auth', () => ({
   login: vi.fn(),
+  resendVerification: vi.fn(),
   me: vi.fn(),
   logout: vi.fn(),
   refresh: vi.fn(),
@@ -115,5 +116,47 @@ describe('LoginForm', () => {
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent('Credenciales inválidas');
     });
+  });
+
+  it('offers to resend the link when the email is not verified', async () => {
+    vi.mocked(authApi.login).mockRejectedValue({
+      response: {
+        status: 403,
+        data: {
+          errorCode: 'EMAIL_NOT_VERIFIED',
+          message: 'Debes verificar tu correo antes de iniciar sesión.',
+          email: 'alice@example.com',
+        },
+      },
+    });
+    vi.mocked(authApi.resendVerification).mockResolvedValue();
+
+    renderLoginForm();
+    await userEvent.type(screen.getByLabelText(/usuario/i), 'alice');
+    await userEvent.type(screen.getByLabelText(/contraseña/i), 'Correcta-2026!');
+    await userEvent.click(screen.getByRole('button', { name: /ingresar/i }));
+
+    expect(await screen.findByText(/debes verificar tu correo/i)).toBeInTheDocument();
+    expect(screen.getByText('alice@example.com')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /^reenviar correo$/i }));
+
+    expect(authApi.resendVerification).toHaveBeenCalledWith('alice@example.com');
+    expect(await screen.findByText(/te enviamos un enlace nuevo/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /reenviar correo \(\d+ s\)/i })).toBeDisabled();
+    expect(mockLogin).not.toHaveBeenCalled();
+  });
+
+  it('does not offer to resend for other login errors', async () => {
+    vi.mocked(authApi.login).mockRejectedValue({
+      response: { status: 401, data: { errorCode: 'UNAUTHORIZED', message: 'Credenciales inválidas' } },
+    });
+
+    renderLoginForm();
+    await userEvent.type(screen.getByLabelText(/usuario/i), 'alice');
+    await userEvent.type(screen.getByLabelText(/contraseña/i), 'wrong');
+    await userEvent.click(screen.getByRole('button', { name: /ingresar/i }));
+
+    expect(await screen.findByText('Credenciales inválidas')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /reenviar correo/i })).not.toBeInTheDocument();
   });
 });
