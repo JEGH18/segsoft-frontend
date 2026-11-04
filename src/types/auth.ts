@@ -5,7 +5,15 @@ export interface LoginRequest {
 
 export interface RegisterRequest {
   username: string;
+  email: string;
   password: string;
+}
+
+/** The account waits for its email to be verified: registering does not start a session. */
+export interface RegistrationResponse {
+  username: string;
+  email: string;
+  message: string;
 }
 
 export interface RegistrationStatus {
@@ -22,6 +30,8 @@ export interface AuthResponse {
 export interface UserResponse {
   id: string;
   username: string;
+  /** Null for the deployment accounts, which have no email. */
+  email?: string | null;
   roles: string[];
 }
 

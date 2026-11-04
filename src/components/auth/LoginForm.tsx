@@ -7,6 +7,7 @@ import { login as apiLogin, me } from '@/api/auth';
 import { useAuth } from '@/store/authStore';
 import { setAccessToken } from '@/utils/tokenStorage';
 import { AlertIcon, ArrowIcon, LockIcon, ShieldIcon, UserIcon } from '@/components/auth/AuthIcons';
+import ResendVerificationButton from '@/components/auth/ResendVerificationButton';
 
 const schema = z.object({
   username: z.string().min(1, 'El usuario es requerido'),
@@ -19,6 +20,7 @@ export default function LoginForm() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   const {
     register,
@@ -35,10 +37,13 @@ export default function LoginForm() {
       login(userResponse, authResponse.accessToken);
       navigate('/', { replace: true });
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { message?: string } } };
-      setServerError(
-        axiosErr.response?.data?.message ?? 'Error al iniciar sesión. Intente nuevamente.',
-      );
+      const axiosErr = err as {
+        response?: { data?: { errorCode?: string; message?: string; email?: string } };
+      };
+      const data = axiosErr.response?.data;
+      // Only sent after a correct password, so the email can be shown to resend the link.
+      setUnverifiedEmail(data?.errorCode === 'EMAIL_NOT_VERIFIED' && data.email ? data.email : null);
+      setServerError(data?.message ?? 'Error al iniciar sesión. Intente nuevamente.');
     }
   };
 
@@ -123,6 +128,15 @@ export default function LoginForm() {
               >
                 <span className="shrink-0 mt-0.5"><AlertIcon /></span>
                 <span>{serverError}</span>
+              </div>
+            )}
+
+            {unverifiedEmail && (
+              <div className="space-y-2">
+                <p className="text-xs text-neutral-500 text-center">
+                  El enlace se envió a <span className="font-medium text-neutral-700">{unverifiedEmail}</span>.
+                </p>
+                <ResendVerificationButton email={unverifiedEmail} />
               </div>
             )}
 

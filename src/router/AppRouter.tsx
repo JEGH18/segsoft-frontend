@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { AuthProvider } from '@/store/authStore';
 import LoginForm from '@/components/auth/LoginForm';
 import RegisterForm from '@/components/auth/RegisterForm';
+import VerifyEmail from '@/components/auth/VerifyEmail';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
 import DashboardPage from '@/pages/DashboardPage';
@@ -34,6 +35,7 @@ export default function AppRouter() {
       <Routes>
         <Route path="/login" element={<LoginForm />} />
         <Route path="/register" element={<RegisterForm />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
 
         <Route
           element={
