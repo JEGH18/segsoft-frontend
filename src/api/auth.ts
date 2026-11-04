@@ -50,3 +50,9 @@ export async function verifyEmail(token: string): Promise<AuthResponse> {
 export async function resendVerification(email: string): Promise<void> {
   await axiosInstance.post('/api/v1/auth/resend-verification', { email });
 }
+
+/** Consumes the link emailed when the account was locked; it does not start a session. */
+export async function unlockAccount(token: string): Promise<string> {
+  const response = await axiosInstance.post<{ message: string }>('/api/v1/auth/unlock', { token });
+  return response.data.message;
+}

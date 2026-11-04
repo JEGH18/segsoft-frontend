@@ -146,6 +146,41 @@ describe('LoginForm', () => {
     expect(mockLogin).not.toHaveBeenCalled();
   });
 
+  it('shows the attempts left and, once locked, how to unlock the account', async () => {
+    vi.mocked(authApi.login)
+      .mockRejectedValueOnce({
+        response: {
+          status: 401,
+          data: {
+            errorCode: 'UNAUTHORIZED',
+            message: 'Credenciales inválidas. Te queda 1 intento antes de que la cuenta se bloquee durante 30 minutos.',
+            attemptsLeft: 1,
+          },
+        },
+      })
+      .mockRejectedValueOnce({
+        response: {
+          status: 423,
+          data: {
+            errorCode: 'ACCOUNT_LOCKED',
+            message:
+              'Demasiados intentos fallidos: la cuenta quedó bloqueada durante 30 minutos. Te enviamos un correo con un enlace para desbloquearla.',
+            minutesLeft: 30,
+          },
+        },
+      });
+
+    renderLoginForm();
+    await userEvent.type(screen.getByLabelText(/usuario/i), 'alice');
+    await userEvent.type(screen.getByLabelText(/contraseña/i), 'wrong');
+    await userEvent.click(screen.getByRole('button', { name: /ingresar/i }));
+    expect(await screen.findByText(/te queda 1 intento/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /ingresar/i }));
+    expect(await screen.findByText(/te enviamos un correo con un enlace para desbloquearla/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /reenviar correo/i })).not.toBeInTheDocument();
+  });
+
   it('does not offer to resend for other login errors', async () => {
     vi.mocked(authApi.login).mockRejectedValue({
       response: { status: 401, data: { errorCode: 'UNAUTHORIZED', message: 'Credenciales inválidas' } },
