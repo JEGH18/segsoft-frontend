@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import UnlockAccount from '@/components/auth/UnlockAccount';
 
@@ -36,12 +37,21 @@ describe('UnlockAccount', () => {
     vi.clearAllMocks();
   });
 
+  it('does nothing until the user presses the button, so a mail scanner cannot use the link', () => {
+    renderAt('/unlock-account?token=abc_DEF-123');
+
+    expect(screen.getByRole('button', { name: /desbloquear mi cuenta/i })).toBeEnabled();
+    expect(authApi.unlockAccount).not.toHaveBeenCalled();
+  });
+
   it('sends the token once and confirms the unlock without logging in', async () => {
     vi.mocked(authApi.unlockAccount).mockResolvedValue('Tu cuenta quedó desbloqueada. Ya puedes iniciar sesión.');
 
     renderAt('/unlock-account?token=abc_DEF-123');
+    await userEvent.click(screen.getByRole('button', { name: /desbloquear mi cuenta/i }));
 
     expect(await screen.findByText(/tu cuenta quedó desbloqueada/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /desbloquear mi cuenta/i })).not.toBeInTheDocument();
     expect(authApi.unlockAccount).toHaveBeenCalledTimes(1);
     expect(authApi.unlockAccount).toHaveBeenCalledWith('abc_DEF-123');
     expect(screen.getByRole('link', { name: /iniciar sesión/i })).toHaveAttribute('href', '/login');
@@ -59,6 +69,7 @@ describe('UnlockAccount', () => {
     });
 
     renderAt('/unlock-account?token=vencido');
+    await userEvent.click(screen.getByRole('button', { name: /desbloquear mi cuenta/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/ya se usó o venció/i);
   });
@@ -67,6 +78,7 @@ describe('UnlockAccount', () => {
     renderAt('/unlock-account');
 
     expect(screen.getByRole('alert')).toHaveTextContent(/no tiene un token/i);
+    expect(screen.queryByRole('button', { name: /desbloquear mi cuenta/i })).not.toBeInTheDocument();
     expect(authApi.unlockAccount).not.toHaveBeenCalled();
   });
 });

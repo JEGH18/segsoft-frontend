@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { unlockAccount } from '@/api/auth';
 import { AlertIcon, ShieldIcon } from '@/components/auth/AuthIcons';
@@ -9,8 +9,9 @@ interface ApiError {
 
 /**
  * Target of the link emailed when an account is locked by failed logins (/unlock-account?token=...).
- * The token is sent with a POST from here, so mail scanners that open the link with a GET do not
- * use it up. Unlocking does not log in: the user goes on to the login with the password.
+ * The token is sent only when the user presses the button: some mail scanners open the links and
+ * run the page's JavaScript, and in production one unlocked an account within seconds of the email.
+ * Unlocking does not log in: the user goes on to the login with the password.
  */
 export default function UnlockAccount() {
   const [searchParams] = useSearchParams();
@@ -19,19 +20,19 @@ export default function UnlockAccount() {
   const [error, setError] = useState<string | null>(
     token ? null : 'El enlace no tiene un token de desbloqueo. Ábrelo desde el correo que te enviamos.',
   );
-  // The token is single-use: React StrictMode runs effects twice in development.
-  const started = useRef(false);
+  const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    if (!token || started.current) return;
-    started.current = true;
-    unlockAccount(token)
-      .then(setMessage)
-      .catch((err: unknown) => {
-        const { response } = err as ApiError;
-        setError(response?.data?.message ?? 'No se pudo desbloquear la cuenta. Intenta nuevamente.');
-      });
-  }, [token]);
+  async function unlock() {
+    setSending(true);
+    try {
+      setMessage(await unlockAccount(token));
+    } catch (err: unknown) {
+      const { response } = err as ApiError;
+      setError(response?.data?.message ?? 'No se pudo desbloquear la cuenta. Intenta nuevamente.');
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4 py-10">
@@ -63,14 +64,27 @@ export default function UnlockAccount() {
               {message}
             </div>
           ) : (
-            <p role="status" className="mt-4 text-sm text-neutral-600">
-              Desbloqueando tu cuenta...
-            </p>
+            <>
+              <p className="mt-4 text-sm text-neutral-600">
+                Tu cuenta está bloqueada por demasiados intentos fallidos. Si fuiste tú, desbloquéala
+                y luego inicia sesión con tu contraseña.
+              </p>
+              <button
+                type="button"
+                onClick={() => void unlock()}
+                disabled={sending}
+                className="btn-primary w-full justify-center mt-6"
+              >
+                {sending ? 'Desbloqueando...' : 'Desbloquear mi cuenta'}
+              </button>
+            </>
           )}
 
-          <Link to="/login" className="btn-primary w-full justify-center mt-6">
-            Ir a iniciar sesión
-          </Link>
+          <p className="text-sm text-neutral-500 text-center mt-6">
+            <Link to="/login" className="font-medium text-neutral-900 hover:underline">
+              Ir a iniciar sesión
+            </Link>
+          </p>
         </div>
 
         <p className="text-center text-xs text-neutral-400 mt-6">

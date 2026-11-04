@@ -55,6 +55,13 @@ describe('VerifyEmail', () => {
     vi.clearAllMocks();
   });
 
+  it('does nothing until the user presses the button, so a mail scanner gets no session', () => {
+    renderAt('/verify-email?token=abc_DEF-123');
+
+    expect(screen.getByRole('button', { name: /verificar mi correo/i })).toBeEnabled();
+    expect(authApi.verifyEmail).not.toHaveBeenCalled();
+  });
+
   it('verifies the token once, starts the session and goes to the dashboard', async () => {
     const user: UserResponse = { id: '1', username: 'juan', email: 'juan@example.com', roles: ['DEVELOPER'] };
     vi.mocked(authApi.verifyEmail).mockResolvedValue({
@@ -66,6 +73,7 @@ describe('VerifyEmail', () => {
     vi.mocked(authApi.me).mockResolvedValue(user);
 
     renderAt('/verify-email?token=abc_DEF-123');
+    await userEvent.click(screen.getByRole('button', { name: /verificar mi correo/i }));
 
     expect(await screen.findByText('Dashboard')).toBeInTheDocument();
     expect(authApi.verifyEmail).toHaveBeenCalledTimes(1);
@@ -86,6 +94,7 @@ describe('VerifyEmail', () => {
     vi.mocked(authApi.resendVerification).mockResolvedValue();
 
     renderAt('/verify-email?token=vencido');
+    await userEvent.click(screen.getByRole('button', { name: /verificar mi correo/i }));
 
     expect(await screen.findByText(/ya se usó o venció/i)).toBeInTheDocument();
     expect(mockLogin).not.toHaveBeenCalled();
@@ -106,6 +115,7 @@ describe('VerifyEmail', () => {
     renderAt('/verify-email');
 
     expect(screen.getByRole('alert')).toHaveTextContent(/no tiene un token/i);
+    expect(screen.queryByRole('button', { name: /verificar mi correo/i })).not.toBeInTheDocument();
     expect(authApi.verifyEmail).not.toHaveBeenCalled();
     expect(screen.getByRole('link', { name: /iniciar sesión/i })).toHaveAttribute('href', '/login');
   });

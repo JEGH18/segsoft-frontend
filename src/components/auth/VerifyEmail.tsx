@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { me, verifyEmail } from '@/api/auth';
 import { useAuth } from '@/store/authStore';
@@ -13,8 +13,9 @@ interface ApiError {
 }
 
 /**
- * Target of the emailed link (/verify-email?token=...). The token is sent with a POST from here,
- * so mail scanners that open the link with a GET do not use it up.
+ * Target of the emailed link (/verify-email?token=...). The token is sent only when the user
+ * presses the button: some mail scanners open the links and run the page's JavaScript, and
+ * verifying starts a session, which must go to the user and not to the scanner.
  */
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
@@ -25,26 +26,22 @@ export default function VerifyEmail() {
     token ? null : 'El enlace no tiene un token de verificación. Ábrelo desde el correo o pide uno nuevo.',
   );
   const [email, setEmail] = useState('');
-  // The token is single-use: React StrictMode runs effects twice in development.
-  const started = useRef(false);
+  const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    if (!token || started.current) return;
-    started.current = true;
-    async function verify() {
-      try {
-        const authResponse = await verifyEmail(token);
-        setAccessToken(authResponse.accessToken);
-        const userResponse = await me();
-        login(userResponse, authResponse.accessToken);
-        navigate('/', { replace: true });
-      } catch (err: unknown) {
-        const { response } = err as ApiError;
-        setError(response?.data?.message ?? 'No se pudo verificar el correo. Intenta nuevamente.');
-      }
+  async function verify() {
+    setSending(true);
+    try {
+      const authResponse = await verifyEmail(token);
+      setAccessToken(authResponse.accessToken);
+      const userResponse = await me();
+      login(userResponse, authResponse.accessToken);
+      navigate('/', { replace: true });
+    } catch (err: unknown) {
+      const { response } = err as ApiError;
+      setError(response?.data?.message ?? 'No se pudo verificar el correo. Intenta nuevamente.');
+      setSending(false);
     }
-    void verify();
-  }, [token, login, navigate]);
+  }
 
   const trimmedEmail = email.trim().toLowerCase();
 
@@ -63,9 +60,19 @@ export default function VerifyEmail() {
           <h1 className="text-2xl font-bold text-neutral-900 mb-1">Verificación de correo</h1>
 
           {!error ? (
-            <p role="status" className="mt-4 text-sm text-neutral-600">
-              Verificando tu correo...
-            </p>
+            <>
+              <p className="mt-4 text-sm text-neutral-600">
+                Confirma que este correo es tuyo para activar tu cuenta.
+              </p>
+              <button
+                type="button"
+                onClick={() => void verify()}
+                disabled={sending}
+                className="btn-primary w-full justify-center mt-6"
+              >
+                {sending ? 'Verificando...' : 'Verificar mi correo'}
+              </button>
+            </>
           ) : (
             <div className="mt-4 space-y-5">
               <div
