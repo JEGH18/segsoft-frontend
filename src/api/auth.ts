@@ -51,6 +51,18 @@ export async function resendVerification(email: string): Promise<void> {
   await axiosInstance.post('/api/v1/auth/resend-verification', { email });
 }
 
+/** Emails a link to choose a new password; answers the same whether or not the email has an account. */
+export async function forgotPassword(email: string): Promise<string> {
+  const response = await axiosInstance.post<{ message: string }>('/api/v1/auth/forgot-password', { email });
+  return response.data.message;
+}
+
+/** Sets a new password with the emailed link; it ends every session and does not start one. */
+export async function resetPassword(token: string, password: string): Promise<string> {
+  const response = await axiosInstance.post<{ message: string }>('/api/v1/auth/reset-password', { token, password });
+  return response.data.message;
+}
+
 /** Consumes the link emailed when the account was locked; it does not start a session. */
 export async function unlockAccount(token: string): Promise<string> {
   const response = await axiosInstance.post<{ message: string }>('/api/v1/auth/unlock', { token });

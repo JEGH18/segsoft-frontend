@@ -135,6 +135,11 @@ export default function LoginForm() {
                   <span>•</span> {errors.password.message}
                 </p>
               )}
+              <p className="mt-1.5 text-right">
+                <Link to="/forgot-password" className="text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:underline">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </p>
             </div>
 
             {serverError && (

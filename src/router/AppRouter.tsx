@@ -4,6 +4,8 @@ import LoginForm from '@/components/auth/LoginForm';
 import RegisterForm from '@/components/auth/RegisterForm';
 import VerifyEmail from '@/components/auth/VerifyEmail';
 import UnlockAccount from '@/components/auth/UnlockAccount';
+import ForgotPassword from '@/components/auth/ForgotPassword';
+import ResetPassword from '@/components/auth/ResetPassword';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import AppLayout from '@/components/layout/AppLayout';
 import DashboardPage from '@/pages/DashboardPage';
@@ -38,6 +40,8 @@ export default function AppRouter() {
         <Route path="/register" element={<RegisterForm />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/unlock-account" element={<UnlockAccount />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         <Route
           element={

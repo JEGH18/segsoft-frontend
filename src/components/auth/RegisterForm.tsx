@@ -7,20 +7,15 @@ import { register as apiRegister, registrationStatus } from '@/api/auth';
 import { AlertIcon, ArrowIcon, LockIcon, MailIcon, ShieldIcon, UserIcon } from '@/components/auth/AuthIcons';
 import PasswordToggle from '@/components/auth/PasswordToggle';
 import ResendVerificationButton, { RESEND_COOLDOWN_SECONDS } from '@/components/auth/ResendVerificationButton';
+import { PasswordRulesList } from '@/components/auth/PasswordRules';
+import { meetsPasswordRules } from '@/utils/passwordRules';
 import type { RegistrationResponse } from '@/types/auth';
 
-// Same rules as the backend (RegisterRequest and PasswordPolicyValidator). The backend also
-// rejects common passwords, reserved names and taken names or emails; those errors come back from the API.
+// Same rules as the backend (RegisterRequest, and PasswordRules for the password). The backend
+// also rejects common passwords, reserved names and taken names or emails; those errors come back
+// from the API.
 const USERNAME_PATTERN = /^[a-z][a-z0-9._-]{2,49}$/;
 const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-
-const PASSWORD_RULES = [
-  { id: 'length', label: 'Al menos 12 caracteres', test: (p: string) => p.length >= 12 },
-  { id: 'upper', label: 'Una letra mayúscula', test: (p: string) => /[A-Z]/.test(p) },
-  { id: 'lower', label: 'Una letra minúscula', test: (p: string) => /[a-z]/.test(p) },
-  { id: 'digit', label: 'Un número', test: (p: string) => /[0-9]/.test(p) },
-  { id: 'special', label: 'Un carácter especial (por ejemplo ! - _ @)', test: (p: string) => /[^A-Za-z0-9]/.test(p) },
-];
 
 const schema = z
   .object({
@@ -43,7 +38,7 @@ const schema = z
     password: z
       .string()
       .min(1, 'La contraseña es requerida')
-      .refine((p) => PASSWORD_RULES.every((rule) => rule.test(p)), 'La contraseña no cumple todos los requisitos'),
+      .refine(meetsPasswordRules, 'La contraseña no cumple todos los requisitos'),
     confirmPassword: z.string().min(1, 'Confirma la contraseña'),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -285,22 +280,7 @@ export default function RegisterForm() {
                     />
                   </div>
                   <FieldError id="password-error" message={errors.password?.message} />
-                  <ul id="password-rules" aria-label="Requisitos de la contraseña" className="mt-2 space-y-1">
-                    {PASSWORD_RULES.map((rule) => {
-                      const ok = rule.test(password);
-                      return (
-                        <li
-                          key={rule.id}
-                          data-ok={ok}
-                          className={`text-xs flex items-center gap-1.5 ${ok ? 'text-green-700' : 'text-neutral-500'}`}
-                        >
-                          <span aria-hidden="true">{ok ? '✓' : '○'}</span>
-                          {rule.label}
-                          <span className="sr-only">{ok ? '(cumplido)' : '(pendiente)'}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <PasswordRulesList password={password} />
                 </div>
 
                 <div>

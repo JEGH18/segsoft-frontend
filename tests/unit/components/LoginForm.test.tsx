@@ -74,6 +74,11 @@ describe('LoginForm', () => {
     expect(password).toHaveAttribute('type', 'password');
   });
 
+  it('links to password recovery', () => {
+    renderLoginForm();
+    expect(screen.getByRole('link', { name: /olvidaste tu contraseña/i })).toHaveAttribute('href', '/forgot-password');
+  });
+
   it('links to account creation', () => {
     renderLoginForm();
     expect(screen.getByRole('link', { name: /crear cuenta/i })).toHaveAttribute('href', '/register');
