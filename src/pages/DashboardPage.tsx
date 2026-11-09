@@ -5,6 +5,7 @@ import { usePolicies } from '@/hooks/usePolicySelection';
 import { usePolicySets } from '@/hooks/usePolicySets';
 import { Framework } from '@/types/enums';
 import type { SourceType } from '@/types/repository';
+import { bitbucketKind, normalizeGitUrl } from '@/utils/gitUrl';
 
 const FRAMEWORK_LABELS: Record<Framework, string> = {
   [Framework.OWASP_TOP_10_2021]: 'OWASP Top 10',
@@ -78,6 +79,7 @@ export default function DashboardPage() {
   const [gitUrl, setGitUrl] = useState('');
   const [branch, setBranch] = useState('main');
   const [accessToken, setAccessToken] = useState('');
+  const bitbucket = bitbucketKind(gitUrl);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -159,7 +161,7 @@ export default function DashboardPage() {
       const resp = mode === 'ZIP'
         ? await uploadZip(file!)
         : await cloneGit({
-            gitUrl: gitUrl.trim(),
+            gitUrl: normalizeGitUrl(gitUrl),
             branch: branch.trim() || 'main',
             accessToken: accessToken.trim() || undefined,
           });
@@ -257,18 +259,26 @@ export default function DashboardPage() {
         ) : (
           <div className="card p-6 space-y-4">
             <div>
-              <label className="form-label block mb-1.5">URL del repositorio</label>
+              <label htmlFor="git-url" className="form-label block mb-1.5">URL del repositorio</label>
               <input
+                id="git-url"
                 type="url"
                 value={gitUrl}
                 onChange={(e) => setGitUrl(e.target.value)}
-                placeholder="https://github.com/usuario/repo.git"
+                placeholder="https://github.com/usuario/repo.git · https://pi2tools.icesi.edu.co/bitbucket/scm/proyecto/repo.git"
                 className="form-input"
               />
+              {bitbucket && (
+                <p className="text-xs text-neutral-400 mt-1">
+                  Puedes pegar tal cual lo que copia el botón «Clone» de Bitbucket; el usuario incluido en la URL se descarta.
+                  {bitbucket === 'server' && ' También sirve la dirección de la página del repositorio.'}
+                </p>
+              )}
             </div>
             <div>
-              <label className="form-label block mb-1.5">Rama</label>
+              <label htmlFor="git-branch" className="form-label block mb-1.5">Rama</label>
               <input
+                id="git-branch"
                 type="text"
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
@@ -277,8 +287,9 @@ export default function DashboardPage() {
               />
             </div>
             <div>
-              <label className="form-label block mb-1.5">Token de acceso (opcional)</label>
+              <label htmlFor="git-token" className="form-label block mb-1.5">Token de acceso (opcional)</label>
               <input
+                id="git-token"
                 type="password"
                 value={accessToken}
                 onChange={(e) => setAccessToken(e.target.value)}
@@ -286,6 +297,16 @@ export default function DashboardPage() {
                 autoComplete="off"
                 className="form-input"
               />
+              {bitbucket === 'cloud' && (
+                <p className="text-xs text-neutral-600 mt-1">
+                  Bitbucket: usa un API token de tu cuenta Atlassian con el permiso <span className="font-mono">read:repository:bitbucket</span>, o un access token del repositorio, proyecto o workspace.
+                </p>
+              )}
+              {bitbucket === 'server' && (
+                <p className="text-xs text-neutral-600 mt-1">
+                  p2tools: crea un token HTTP de acceso en tu perfil (Administrar cuenta → Tokens de acceso HTTP) con permiso de lectura de repositorios. También sirve un token del proyecto o del repositorio.
+                </p>
+              )}
               <p className="text-xs text-neutral-400 mt-1">
                 Se usa una sola vez para clonar y no se almacena ni se muestra en ningún lado.
               </p>
