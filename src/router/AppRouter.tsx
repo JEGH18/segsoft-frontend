@@ -19,6 +19,7 @@ import ReportListPage from '@/pages/reports/ReportListPage';
 import ReportDetailPage from '@/pages/reports/ReportDetailPage';
 import AnalysisResultsPage from '@/pages/analysis/AnalysisResultsPage';
 import AnalysesLandingPage from '@/pages/analysis/AnalysesLandingPage';
+import ApiTokensPage from '@/pages/ApiTokensPage';
 
 function RepositoryFilesPage() {
   const { repoId } = useParams<{ repoId: string }>();
@@ -61,6 +62,7 @@ export default function AppRouter() {
           <Route path="/analyses/:id/results" element={<AnalysisResultsPage />} />
           <Route path="/reports" element={<ReportListPage />} />
           <Route path="/reports/:id" element={<ReportDetailPage />} />
+          <Route path="/api-tokens" element={<ApiTokensPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

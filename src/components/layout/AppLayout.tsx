@@ -21,6 +21,17 @@ function LogoutIcon() {
   );
 }
 
+function KeyIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="7.5" cy="15.5" r="4.5" />
+      <path d="M10.7 12.3L21 2" />
+      <path d="M16 7l3 3" />
+      <path d="M18 5l2 2" />
+    </svg>
+  );
+}
+
 const navItems = [
   { to: '/', label: 'Dashboard', end: true },
   { to: '/analyses', label: 'Análisis', end: false },
@@ -78,6 +89,16 @@ export default function AppLayout() {
                   </span>
                 </span>
               )}
+              <NavLink
+                to="/api-tokens"
+                title="Tokens de API"
+                aria-label="Tokens de API"
+                className={({ isActive }) =>
+                  `flex items-center text-sm transition-colors ${isActive ? 'text-neutral-900' : 'text-neutral-500 hover:text-neutral-900'}`
+                }
+              >
+                <KeyIcon />
+              </NavLink>
               <button
                 onClick={handleLogout}
                 title="Cerrar sesión"
