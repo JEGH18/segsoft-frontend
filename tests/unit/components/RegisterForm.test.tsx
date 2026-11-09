@@ -95,6 +95,29 @@ describe('RegisterForm', () => {
     expect(rules.querySelectorAll('[data-ok="true"]')).toHaveLength(5);
   });
 
+  it('shows and hides each password field independently with its eye button', async () => {
+    renderRegisterForm();
+    const password = screen.getByLabelText(/^contraseña$/i);
+    const confirm = screen.getByLabelText(/confirmar contraseña/i);
+    expect(password).toHaveAttribute('type', 'password');
+    expect(confirm).toHaveAttribute('type', 'password');
+
+    await userEvent.type(password, 'abc');
+    const toggle = screen.getByRole('button', { name: /^mostrar contraseña$/i });
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(toggle);
+    expect(password).toHaveAttribute('type', 'text');
+    expect(password).toHaveValue('abc');
+    expect(confirm).toHaveAttribute('type', 'password');
+    expect(screen.getByRole('button', { name: /^ocultar contraseña$/i })).toHaveAttribute('aria-pressed', 'true');
+
+    await userEvent.click(screen.getByRole('button', { name: /mostrar confirmación de contraseña/i }));
+    expect(confirm).toHaveAttribute('type', 'text');
+
+    await userEvent.click(screen.getByRole('button', { name: /^ocultar contraseña$/i }));
+    expect(password).toHaveAttribute('type', 'password');
+  });
+
   it('validates the username, the email, the password rules and the confirmation before calling the API', async () => {
     renderRegisterForm();
     await fillForm('1malo', 'corta', 'otra', 'sin-arroba');

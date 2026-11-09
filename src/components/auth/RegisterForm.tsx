@@ -5,6 +5,7 @@ import { useEffect, useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { register as apiRegister, registrationStatus } from '@/api/auth';
 import { AlertIcon, ArrowIcon, LockIcon, MailIcon, ShieldIcon, UserIcon } from '@/components/auth/AuthIcons';
+import PasswordToggle from '@/components/auth/PasswordToggle';
 import ResendVerificationButton, { RESEND_COOLDOWN_SECONDS } from '@/components/auth/ResendVerificationButton';
 import type { RegistrationResponse } from '@/types/auth';
 
@@ -78,6 +79,8 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 
 export default function RegisterForm() {
   const [serverError, setServerError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [enabled, setEnabled] = useState(true);
   const [registered, setRegistered] = useState<RegistrationResponse | null>(null);
 
@@ -263,13 +266,22 @@ export default function RegisterForm() {
                     </span>
                     <input
                       id="password"
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       autoComplete="new-password"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                       placeholder="••••••••••••"
                       aria-invalid={!!errors.password}
                       aria-describedby={`password-rules${errors.password ? ' password-error' : ''}`}
-                      className={fieldClass(!!errors.password)}
+                      className={`${fieldClass(!!errors.password)} pr-10`}
                       {...register('password')}
+                    />
+                    <PasswordToggle
+                      controls="password"
+                      visible={showPassword}
+                      onToggle={() => setShowPassword((v) => !v)}
+                      label="contraseña"
                     />
                   </div>
                   <FieldError id="password-error" message={errors.password?.message} />
@@ -301,13 +313,22 @@ export default function RegisterForm() {
                     </span>
                     <input
                       id="confirmPassword"
-                      type="password"
+                      type={showConfirm ? 'text' : 'password'}
                       autoComplete="new-password"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                       placeholder="••••••••••••"
                       aria-invalid={!!errors.confirmPassword}
                       aria-describedby={errors.confirmPassword ? 'confirm-error' : undefined}
-                      className={fieldClass(!!errors.confirmPassword)}
+                      className={`${fieldClass(!!errors.confirmPassword)} pr-10`}
                       {...register('confirmPassword')}
+                    />
+                    <PasswordToggle
+                      controls="confirmPassword"
+                      visible={showConfirm}
+                      onToggle={() => setShowConfirm((v) => !v)}
+                      label="confirmación de contraseña"
                     />
                   </div>
                   <FieldError id="confirm-error" message={errors.confirmPassword?.message} />

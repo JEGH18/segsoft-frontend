@@ -57,7 +57,21 @@ describe('LoginForm', () => {
   it('renders username and password fields', () => {
     renderLoginForm();
     expect(screen.getByLabelText(/usuario/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^contraseña$/i)).toBeInTheDocument();
+  });
+
+  it('shows and hides the password with the eye button', async () => {
+    renderLoginForm();
+    const password = screen.getByLabelText(/^contraseña$/i);
+    expect(password).toHaveAttribute('type', 'password');
+
+    await userEvent.type(password, 'secret');
+    await userEvent.click(screen.getByRole('button', { name: /^mostrar contraseña$/i }));
+    expect(password).toHaveAttribute('type', 'text');
+    expect(password).toHaveValue('secret');
+
+    await userEvent.click(screen.getByRole('button', { name: /^ocultar contraseña$/i }));
+    expect(password).toHaveAttribute('type', 'password');
   });
 
   it('links to account creation', () => {
@@ -95,7 +109,7 @@ describe('LoginForm', () => {
 
     renderLoginForm();
     await userEvent.type(screen.getByLabelText(/usuario/i), 'alice');
-    await userEvent.type(screen.getByLabelText(/contraseña/i), 'secret');
+    await userEvent.type(screen.getByLabelText(/^contraseña$/i), 'secret');
     await userEvent.click(screen.getByRole('button', { name: /ingresar/i }));
 
     await waitFor(() => {
@@ -111,7 +125,7 @@ describe('LoginForm', () => {
 
     renderLoginForm();
     await userEvent.type(screen.getByLabelText(/usuario/i), 'alice');
-    await userEvent.type(screen.getByLabelText(/contraseña/i), 'wrong');
+    await userEvent.type(screen.getByLabelText(/^contraseña$/i), 'wrong');
     await userEvent.click(screen.getByRole('button', { name: /ingresar/i }));
 
     await waitFor(() => {
@@ -134,7 +148,7 @@ describe('LoginForm', () => {
 
     renderLoginForm();
     await userEvent.type(screen.getByLabelText(/usuario/i), 'alice');
-    await userEvent.type(screen.getByLabelText(/contraseña/i), 'Correcta-2026!');
+    await userEvent.type(screen.getByLabelText(/^contraseña$/i), 'Correcta-2026!');
     await userEvent.click(screen.getByRole('button', { name: /ingresar/i }));
 
     expect(await screen.findByText(/debes verificar tu correo/i)).toBeInTheDocument();
@@ -173,7 +187,7 @@ describe('LoginForm', () => {
 
     renderLoginForm();
     await userEvent.type(screen.getByLabelText(/usuario/i), 'alice');
-    await userEvent.type(screen.getByLabelText(/contraseña/i), 'wrong');
+    await userEvent.type(screen.getByLabelText(/^contraseña$/i), 'wrong');
     await userEvent.click(screen.getByRole('button', { name: /ingresar/i }));
     expect(await screen.findByText(/te queda 1 intento/i)).toBeInTheDocument();
 
@@ -189,7 +203,7 @@ describe('LoginForm', () => {
 
     renderLoginForm();
     await userEvent.type(screen.getByLabelText(/usuario/i), 'alice');
-    await userEvent.type(screen.getByLabelText(/contraseña/i), 'wrong');
+    await userEvent.type(screen.getByLabelText(/^contraseña$/i), 'wrong');
     await userEvent.click(screen.getByRole('button', { name: /ingresar/i }));
 
     expect(await screen.findByText('Credenciales inválidas')).toBeInTheDocument();

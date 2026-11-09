@@ -7,6 +7,7 @@ import { login as apiLogin, me } from '@/api/auth';
 import { useAuth } from '@/store/authStore';
 import { setAccessToken } from '@/utils/tokenStorage';
 import { AlertIcon, ArrowIcon, LockIcon, ShieldIcon, UserIcon } from '@/components/auth/AuthIcons';
+import PasswordToggle from '@/components/auth/PasswordToggle';
 import ResendVerificationButton from '@/components/auth/ResendVerificationButton';
 import { clearSessionEndedNotice, readSessionEndedNotice } from '@/utils/sessionNotice';
 
@@ -23,6 +24,7 @@ export default function LoginForm() {
   // Why the previous session was ended (e.g. the account got locked), shown once.
   const [serverError, setServerError] = useState<string | null>(readSessionEndedNotice);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     clearSessionEndedNotice();
@@ -110,13 +112,22 @@ export default function LoginForm() {
                 </span>
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   placeholder="••••••••"
                   aria-invalid={!!errors.password}
                   aria-describedby={errors.password ? 'password-error' : undefined}
-                  className={`form-input form-input-icon ${errors.password ? 'border-red-400 focus:border-red-400 focus:ring-red-400' : ''}`}
+                  className={`form-input form-input-icon pr-10 ${errors.password ? 'border-red-400 focus:border-red-400 focus:ring-red-400' : ''}`}
                   {...register('password')}
+                />
+                <PasswordToggle
+                  controls="password"
+                  visible={showPassword}
+                  onToggle={() => setShowPassword((v) => !v)}
+                  label="contraseña"
                 />
               </div>
               {errors.password && (
