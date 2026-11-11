@@ -144,7 +144,7 @@ describe('dashboard framework preselection', () => {
     await user.click(screen.getByRole('button', { name: /subir y continuar/i }));
 
     await waitFor(() => {
-      expect(repositoriesApi.uploadZip).toHaveBeenCalledWith(file);
+      expect(repositoriesApi.uploadZip).toHaveBeenCalledWith(file, expect.any(Function));
     });
 
     // Landed on the policy-selection screen for the new repo, framework param applied.

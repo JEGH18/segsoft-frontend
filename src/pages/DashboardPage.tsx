@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { uploadZip, cloneGit } from '@/api/repositories';
+import { repositoryErrorMessage } from '@/utils/repositoryError';
 import { usePolicies } from '@/hooks/usePolicySelection';
 import { usePolicySets } from '@/hooks/usePolicySets';
 import { Framework } from '@/types/enums';
@@ -82,6 +83,7 @@ export default function DashboardPage() {
   const bitbucket = bitbucketKind(gitUrl);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [selectedFramework, setSelectedFramework] = useState<Framework | null>(null);
   const [selectedPolicySetId, setSelectedPolicySetId] = useState<string | null>(null);
@@ -157,9 +159,10 @@ export default function DashboardPage() {
     }
 
     setLoading(true);
+    setUploadProgress(null);
     try {
       const resp = mode === 'ZIP'
-        ? await uploadZip(file!)
+        ? await uploadZip(file!, setUploadProgress)
         : await cloneGit({
             gitUrl: normalizeGitUrl(gitUrl),
             branch: branch.trim() || 'main',
@@ -172,11 +175,10 @@ export default function DashboardPage() {
           : '';
       navigate(`/repositories/${resp.id}/policy-selection${query}`);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        ?? 'Error al procesar el repositorio';
-      setError(msg);
+      setError(repositoryErrorMessage(err, mode));
     } finally {
       setLoading(false);
+      setUploadProgress(null);
     }
   }
 
@@ -333,7 +335,11 @@ export default function DashboardPage() {
 
         <button type="submit" disabled={loading} className="btn-primary w-full justify-center py-3">
           {loading
-            ? (mode === 'ZIP' ? 'Subiendo...' : 'Clonando...')
+            ? (mode === 'ZIP'
+              ? (uploadProgress === null
+                ? 'Subiendo...'
+                : uploadProgress < 100 ? `Subiendo... ${uploadProgress}%` : 'Descomprimiendo y revisando el archivo...')
+              : 'Clonando...')
             : (mode === 'ZIP' ? 'Subir y continuar a selección de políticas' : 'Clonar y continuar a selección de políticas')}
         </button>
       </form>
